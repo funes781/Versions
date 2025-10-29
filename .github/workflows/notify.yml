@@ -8,6 +8,7 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
+    environment: changelogger
 
     steps:
       - name: Checkout repository
@@ -23,7 +24,7 @@ jobs:
       - name: Send Log
         if: steps.changes.outputs.changed_files != ''
         env:
-          WEBHOOK: ${{ secrets.WEBHOOK }}
+          WEBHOOK: ${{ vars.WEBHOOK }}
         run: |
           for file in ${{ steps.changes.outputs.changed_files }}; do
             if grep -q "version:" "$file"; then
@@ -32,10 +33,10 @@ jobs:
               CHANGELOG=$(grep "changelog:" "$file" | cut -d':' -f2- | xargs)
               COLOR_HEX=$(grep "color:" "$file" | cut -d':' -f2 | xargs | tr -d '#')
 
-              # Zamiana HEX na DEC (Discord używa intów)
+              if [ -z "$COLOR_HEX" ]; then
+                COLOR_HEX="ff9900"
+              fi
               COLOR_DEC=$((16#$COLOR_HEX))
-
-              echo "Wysyłam webhook dla $RESOURCE_NAME v$VERSION (kolor $COLOR_HEX)"
 
               curl -X POST "$WEBHOOK" \
                 -H "Content-Type: application/json" \
