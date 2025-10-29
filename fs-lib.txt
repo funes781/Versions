@@ -1,2 +1,2 @@
-version: 1.0.1
-commit: 'test commit'
+version: 1.0.0
+changelog: initial commit
