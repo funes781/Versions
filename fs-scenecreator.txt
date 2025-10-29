@@ -1,2 +1,2 @@
 version: 1.0.0
-changes: init commit
+changelog: init commit
