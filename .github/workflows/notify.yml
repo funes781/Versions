@@ -1,0 +1,55 @@
+name: Change Logger
+
+on: 
+  push:
+    paths:
+      - "*.txt"
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect changed version files
+        id: changes
+        run: |
+          git fetch origin ${{ github.event.before }}
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '.txt' || true)
+          echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
+
+      - name: Send Log
+        if: steps.changes.outputs.changed_files != ''
+        env:
+          WEBHOOK: ${{ secrets.WEBHOOK }}
+        run: |
+          for file in ${{ steps.changes.outputs.changed_files }}; do
+            if grep -q "version:" "$file"; then
+              RESOURCE_NAME=$(basename "$file" .txt)
+              VERSION=$(grep "version:" "$file" | cut -d':' -f2 | xargs)
+              CHANGELOG=$(grep "changelog:" "$file" | cut -d':' -f2- | xargs)
+              COLOR_HEX=$(grep "color:" "$file" | cut -d':' -f2 | xargs | tr -d '#')
+
+              # Zamiana HEX na DEC (Discord używa intów)
+              COLOR_DEC=$((16#$COLOR_HEX))
+
+              echo "Wysyłam webhook dla $RESOURCE_NAME v$VERSION (kolor $COLOR_HEX)"
+
+              curl -X POST "$WEBHOOK" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"content\": \"\",
+                  \"tts\": false,
+                  \"embeds\": [
+                    {
+                      \"title\": \"Changelog - ${RESOURCE_NAME} v${VERSION}\",
+                      \"description\": \"${CHANGELOG}\",
+                      \"color\": ${COLOR_DEC},
+                      \"footer\": { \"text\": \"FS Scripts\" }
+                    }
+                  ]
+                }"
+            fi
+          done
