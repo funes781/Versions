@@ -1,3 +1,2 @@
-version: 1.0.0
-changelog: init commit
-color: #ffcc01
+version: 
+changelog: **Initial Commit**  **push detection** 
