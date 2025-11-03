@@ -30,7 +30,8 @@ jobs:
             if grep -q "version:" "$file"; then
               RESOURCE_NAME=$(basename "$file" .txt)
               VERSION=$(grep "version:" "$file" | cut -d':' -f2 | xargs)
-              CHANGELOG=$(grep "changelog:" "$file" | cut -d':' -f2- | xargs)
+              # CHANGELOG=$(grep "changelog:" "$file" | cut -d':' -f2- | xargs)
+              CHANGELOG=$(awk '/^changelog:/{flag=1;next}/^version:/{flag=0}flag' "$file")
               COLOR_HEX=$(grep "color:" "$file" | cut -d':' -f2 | xargs | tr -d '#')
 
               if [ -z "$COLOR_HEX" ]; then
