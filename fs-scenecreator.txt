@@ -1,7 +1,16 @@
-version: 1.0.7
+version: 1.0.8
 changelog:
 **Initial Commit**
 
 **push detection**
 
 **testowa wiadomosc**
+
+**testowa wiadomosc2**
+
+**testowa wiadomosc3**
+
+[-] usunieto
+[+] dodano
+[/] zmieniono
+[^] naprawiono
