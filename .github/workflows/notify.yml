@@ -34,6 +34,8 @@ jobs:
               CHANGELOG=$(awk '/^changelog:/{flag=1;next}/^version:/{flag=0}flag' "$file")
               COLOR_HEX=$(grep "color:" "$file" | cut -d':' -f2 | xargs | tr -d '#')
 
+              CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
+
               if [ -z "$COLOR_HEX" ]; then
                 COLOR_HEX="ff9900"
               fi
@@ -47,7 +49,7 @@ jobs:
                   \"embeds\": [
                     {
                       \"title\": \"Changelog - ${RESOURCE_NAME} v${VERSION}\",
-                      \"description\": \"${CHANGELOG}\",
+                      \"description\": \"${CHANGELOG_ESCAPED}\",
                       \"color\": ${COLOR_DEC},
                       \"footer\": { \"text\": \"FS Scripts\" }
                     }
