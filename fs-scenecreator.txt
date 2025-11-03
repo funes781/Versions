@@ -1,2 +1,7 @@
-version: 
-changelog: **Initial Commit**  **push detection** 
+version: 1.0.7
+changelog:
+**Initial Commit**
+
+**push detection**
+
+**testowa wiadomosc**
