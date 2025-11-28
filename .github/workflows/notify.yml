@@ -67,8 +67,7 @@ on:
 
 jobs:
   notify:
-    runs-on: ubuntu-24.04
-    environment: changelogger
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -83,25 +82,26 @@ jobs:
 
       - name: Send Logs
         if: steps.changes.outputs.changed_files != ''
+        env:
+          DEFAULT_WEBHOOK: ${{ secrets.DEFAULT_WEBHOOK }}
         run: |
           for file in ${{ steps.changes.outputs.changed_files }}; do
-
             BASENAME=$(basename "$file" .txt)
             SECRET_NAME=$(echo $BASENAME | tr '[:lower:]-' '[:upper:]_')_WEBHOOK
 
             echo "Szukam sekretu: $SECRET_NAME"
 
-            # Pobranie sekretu dynamicznie
-            WEBHOOK_URL="${{ secrets.DEFAULT_WEBHOOK }}"
-            SPECIFIC_SECRET="${{ secrets[SECRET_NAME] }}"
+            # pobierz wartość sekretu
+            WEBHOOK_URL=$(jq -r ".${SECRET_NAME}" <<< '${{ toJson(secrets) }}')
 
-            if [ ! -z "$SPECIFIC_SECRET" ]; then
-              WEBHOOK_URL="$SPECIFIC_SECRET"
-              echo "Znaleziono sekret: $SECRET_NAME"
+            if [ "$WEBHOOK_URL" == "null" ] || [ -z "$WEBHOOK_URL" ]; then
+              echo "Brak sekretu $SECRET_NAME – używam DEFAULT_WEBHOOK"
+              WEBHOOK_URL="$DEFAULT_WEBHOOK"
             else
-              echo "Nie znaleziono $SECRET_NAME – używam DEFAULT_WEBHOOK"
+              echo "Znaleziono sekret: $SECRET_NAME"
             fi
 
+            # przetwarzanie changelog.txt
             if grep -q "version:" "$file"; then
               RESOURCE_NAME=$(basename "$file" .txt)
               VERSION=$(grep "version:" "$file" | cut -d':' -f2 | xargs)
