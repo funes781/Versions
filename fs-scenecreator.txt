@@ -1,16 +1,7 @@
-version: 1.0.10
+version: 1.0.11
 changelog:
-**Initial Commit**
-
-**push detection**
-
-**testowa wiadomosc**
-
-**testowa wiadomosc2**
-
-**testowa wiadomosc3**
-
-[-] usunieto
-[+] dodano
-[/] zmieniono
-[^] naprawiono
+[/] fixed animations
+[-] removed shit code
+[+] setup for redm
+[+] setup for fivem
+[/] models validations 
