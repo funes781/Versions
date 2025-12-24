@@ -1,4 +1,4 @@
-version: 0.0.4
+version: 0.0.5
 changelog:
 [/] fixes
 
@@ -10,3 +10,8 @@ changelog:
 [+] fivem setup
 [+] callbacks + fixes
 [+] nui elements
+
+[+] stats db
+[+] sql installer
+[+] stats callbacks
+[+] stats systems
