@@ -1,63 +1,3 @@
-# name: Change Logger
-
-# on: 
-#   push:
-#     paths:
-#       - "*.txt"
-
-# jobs:
-#   notify:
-#     runs-on: ubuntu-latest
-#     environment: changelogger
-
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
-
-#       - name: Detect changed version files
-#         id: changes
-#         run: |
-#           git fetch origin ${{ github.event.before }}
-#           CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '.txt' || true)
-#           echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
-
-#       - name: Send Log
-#         if: steps.changes.outputs.changed_files != ''
-#         env:
-#           WEBHOOK: ${{ vars.WEBHOOK }}
-#         run: |
-#           for file in ${{ steps.changes.outputs.changed_files }}; do
-#             if grep -q "version:" "$file"; then
-#               RESOURCE_NAME=$(basename "$file" .txt)
-#               VERSION=$(grep "version:" "$file" | cut -d':' -f2 | xargs)
-#               # CHANGELOG=$(grep "changelog:" "$file" | cut -d':' -f2- | xargs)
-#               CHANGELOG=$(awk '/^changelog:/{flag=1;next}/^version:/{flag=0}flag' "$file")
-#               COLOR_HEX=$(grep "color:" "$file" | cut -d':' -f2 | xargs | tr -d '#')
-
-#               CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
-
-#               if [ -z "$COLOR_HEX" ]; then
-#                 COLOR_HEX="ff9900"
-#               fi
-#               COLOR_DEC=$((16#$COLOR_HEX))
-
-#               curl -X POST "$WEBHOOK" \
-#                 -H "Content-Type: application/json" \
-#                 -d "{
-#                   \"content\": \"\",
-#                   \"tts\": false,
-#                   \"embeds\": [
-#                     {
-#                       \"title\": \"Changelog - ${RESOURCE_NAME} v${VERSION}\",
-#                       \"description\": \"${CHANGELOG_ESCAPED}\",
-#                       \"color\": ${COLOR_DEC},
-#                       \"footer\": { \"text\": \"FS Scripts\" }
-#                     }
-#                   ]
-#                 }"
-#             fi
-#           done
-
 name: Change Logger
 
 on:
@@ -77,56 +17,71 @@ jobs:
         id: changes
         run: |
           git fetch origin ${{ github.event.before }}
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '.txt' || true)
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.txt$' || true)
           echo "changed_files=$CHANGED_FILES" >> $GITHUB_OUTPUT
 
-      - name: Send Logs
+      - name: Send Logs to Discord
         if: steps.changes.outputs.changed_files != ''
         env:
           DEFAULT_WEBHOOK: ${{ secrets.DEFAULT_WEBHOOK }}
         run: |
+          set -e
+
           for file in ${{ steps.changes.outputs.changed_files }}; do
             BASENAME=$(basename "$file" .txt)
-            SECRET_NAME=$(echo $BASENAME | tr '[:lower:]-' '[:upper:]_')_WEBHOOK
+            SECRET_NAME=$(echo "$BASENAME" | tr '[:lower:]-' '[:upper:]_')_WEBHOOK
 
-            echo "Szukam sekretu: $SECRET_NAME"
-
-            # pobierz wartość sekretu
             WEBHOOK_URL=$(jq -r ".${SECRET_NAME}" <<< '${{ toJson(secrets) }}')
 
-            if [ "$WEBHOOK_URL" == "null" ] || [ -z "$WEBHOOK_URL" ]; then
-              echo "Brak sekretu $SECRET_NAME – używam DEFAULT_WEBHOOK"
+            if [ "$WEBHOOK_URL" = "null" ] || [ -z "$WEBHOOK_URL" ]; then
+              echo "⚠️ Brak sekretu $SECRET_NAME – używam DEFAULT_WEBHOOK"
               WEBHOOK_URL="$DEFAULT_WEBHOOK"
             else
               echo "Znaleziono sekret: $SECRET_NAME"
             fi
 
-            # przetwarzanie changelog.txt
-            if grep -q "version:" "$file"; then
-              RESOURCE_NAME=$(basename "$file" .txt)
-              VERSION=$(grep "version:" "$file" | cut -d':' -f2 | xargs)
-              CHANGELOG=$(awk '/^changelog:/{flag=1;next}/^version:/{flag=0}flag' "$file")
-              COLOR_HEX=$(grep "color:" "$file" | cut -d':' -f2 | xargs | tr -d '#')
-
-              CHANGELOG_ESCAPED=$(echo "$CHANGELOG" | sed ':a;N;$!ba;s/\n/\\n/g' | sed 's/"/\\"/g')
-
-              if [ -z "$COLOR_HEX" ]; then
-                COLOR_HEX="ff9900"
-              fi
-              COLOR_DEC=$((16#$COLOR_HEX))
-
-              curl -X POST "$WEBHOOK_URL" \
-                -H "Content-Type: application/json" \
-                -d "{
-                  \"content\": \"\",
-                  \"embeds\": [
-                    {
-                      \"title\": \"Changelog - ${RESOURCE_NAME} v${VERSION}\",
-                      \"description\": \"${CHANGELOG_ESCAPED}\",
-                      \"color\": ${COLOR_DEC},
-                      \"footer\": { \"text\": \"FS Scripts\" }
-                    }
-                  ]
-                }"
+            if ! grep -q "^version:" "$file"; then
+              echo "$file (brak version)"
+              continue
             fi
+
+            RESOURCE_NAME="$BASENAME"
+            VERSION=$(grep "^version:" "$file" | cut -d':' -f2 | xargs)
+            COLOR_HEX=$(grep "^color:" "$file" | cut -d':' -f2 | xargs | tr -d '#' || true)
+
+            CHANGELOG=$(awk '
+              /^changelog:/ {flag=1; next}
+              /^version:/ {flag=0}
+              flag {print}
+            ' "$file")
+
+            if [ -z "$COLOR_HEX" ]; then
+              COLOR_HEX="ff9900"
+            fi
+
+            COLOR_DEC=$((16#$COLOR_HEX))
+
+            PAYLOAD=$(jq -n \
+              --arg title "Changelog - ${RESOURCE_NAME} v${VERSION}" \
+              --arg description "$CHANGELOG" \
+              --arg footer "FS Scripts" \
+              --argjson color "$COLOR_DEC" \
+              '{
+                content: "",
+                embeds: [
+                  {
+                    title: $title,
+                    description: $description,
+                    color: $color,
+                    footer: { text: $footer }
+                  }
+                ]
+              }'
+            )
+
+            curl -s -o /dev/null -w "%{http_code}\n" \
+              -X POST "$WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d "$PAYLOAD"
+
           done
