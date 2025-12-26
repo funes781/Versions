@@ -1,7 +1,4 @@
-version: 0.0.7
+version: 0.0.8
 changelog:
-[/] fixes
-
-[/] reposivity fixes
-
-[+] duty systems (counting hours)
+[+] reseting hours, courses, invoices
+[+] more more and more systems
