@@ -1,3 +1,15 @@
-version: 1.0.8
+version: 1.0.9
 changelog:
+[+] copy to clipboard
+[+] polyzone creator
+[+] freecam
 
+
+[/] scaleform truncateKeys functions - (combine 2 tables into one)
+[/] ped placement
+[/] vehicle placement
+[/] freecam fixes
+[/] polyzone creator limits
+[/] locales
+
+[/] new folders structure 
