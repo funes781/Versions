@@ -1,3 +1,16 @@
-version: 0.5.5
+version: 0.0.9
 changelog:
+[+] co-owner handler
+[+] co-owner favourite handler
+[+] co-owner garage/impound etc.
 
+[/] fix impound
+
+[+] locales system
+[+] polish language
+
+[+] notification system
+[+] nui notification system
+
+[+] hiddenjob tab
+[+] hiddenjob check 
