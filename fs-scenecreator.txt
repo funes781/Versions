@@ -1,7 +1,0 @@
-version: 1.0.12
-changelog:
-[/] fixed animations
-[-] removed shit code
-[+] setup for redm
-[+] setup for fivem
-[/] models validations 
