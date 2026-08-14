@@ -1,4 +1,1 @@
-version: 0.0.9
-changelog:
-[+] reseting hours, courses, invoices
-[+] more more and more systems
+
